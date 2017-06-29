@@ -16,7 +16,7 @@ Up(double tf, double freq, double dfreq)
 }
 
 void 
-get_co(double freq, double dfreq, const double T0, const double m, 
+get_co(double freq, double dfreq, const double T0, const double m, const double radius,
 	   const size_t Ntk, const double *T, const double *k, 
 	   const size_t N, double **A, double **B, double **C, double **D)
 {
@@ -25,6 +25,7 @@ get_co(double freq, double dfreq, const double T0, const double m,
 	*C = malloc_array(N + 1);
 	*D = malloc_array(N + 1);
 	
+	double Ra = radius;
 	double 	h = 1. / N;					// step
 	double r3h = 3. * Ra * Ra * h * h;
 	
@@ -86,12 +87,12 @@ show_tridiagonal(const size_t N, const double *A, const double *B, const double 
 }
 
 void
-solve_tridiagonal(double freq, double dfreq, const double T0, const double m,
+solve_tridiagonal(double freq, double dfreq, const double T0, const double m, const double radius,
 				  const size_t Ntk, const double *T, const double *k,
 				  const size_t N, double **y)
 {
 	double *A = NULL, *B = NULL, *C = NULL, *D = NULL;
-	get_co(freq, dfreq, T0, m, Ntk, T, k, N, &A, &B, &C, &D);
+	get_co(freq, dfreq, T0, m, radius, Ntk, T, k, N, &A, &B, &C, &D);
 		
 	// show_tridiagonal(N, A, B, C, D);		// SHOW MATRIX 
 	
@@ -120,8 +121,9 @@ solve_tridiagonal(double freq, double dfreq, const double T0, const double m,
 	free(A); free(B); free(C); free(D);
 }
 
-double*
-get_q(const double T0, const double m, const size_t N)
+void
+get_q(const double T0, const double m, const size_t N, const double radius,
+	  double **Qd, double **Qv)
 {
 	/* ========== READ DATA =========== */
 	double *frequency = malloc_array(194);
@@ -170,7 +172,7 @@ get_q(const double T0, const double m, const size_t N)
 		double dfreq = frequency[i+1] - frequency[i];
 		
 		tmp = NULL;
-		solve_tridiagonal(freq, dfreq, T0, m, 16, temperature, k_tab, N, &tmp);
+		solve_tridiagonal(freq, dfreq, T0, m, radius, 16, temperature, k_tab, N, &tmp);
 		
 		/* save to tab */
 		for (int j = 0;  j <= N; j++)
@@ -179,7 +181,8 @@ get_q(const double T0, const double m, const size_t N)
 	}
 	
 	/* ========== CALCULATE Q ========== */
-	double *result = malloc_array(N + 1);
+	*Qd = malloc_array(N + 1);
+	*Qv = malloc_array(N + 1);
 	
 	double dx = 1. / N;
 		   
@@ -188,7 +191,9 @@ get_q(const double T0, const double m, const size_t N)
 		double xf = i * dx;
 		double tf = temper(xf, T0, m);
 		
-		result[i] = 0.;
+		(*Qd)[i] = 0.;
+		(*Qv)[i] = 0.;
+		
 		for (int j = 0; j < 193; j++)
 		{
 			/* get copy of value (k) from tab */
@@ -200,34 +205,60 @@ get_q(const double T0, const double m, const size_t N)
 			double dfreq = frequency[j+1] - frequency[j];
 			
 			double upi = Up(tf, freq, dfreq);
-			if (j == 22)
+			//if (j == 22)
 				//printf("%E\t%E\t%E\t%E\t%.8f\t%.8f\n", xf, ki, upi, y[j][i], freq, dfreq);
-				printf("%E\t%E\t%E\t%E\n", xf, ki, upi, y[j][i]);
-			result[i] += ki * (upi - y[j][i]);
+				//printf("%E\t%E\t%E\t%E\n", xf, ki, upi, y[j][i]);
+			(*Qd)[i] += ki * (upi - y[j][i]);
+			(*Qv)[i] += ki * upi;
 		}
-		
-		result[i] *= Ch;
+		  
+		(*Qd)[i] *= Ch;
+		(*Qv)[i] *= Ch;
 	}
 
 	free(k_tab); free_m(193, y);
 	free(temperature); free(frequency); free_m(16, KT);
-	return result;
 }
 
 void 
 save_solution(const double T0, const double m, const size_t N)
 {
-	double *q = get_q(T0, m, N);
+	double *Qd = NULL, *Qv = NULL;
+	#define Rad 0.35 /* cm */
+	get_q(T0, m, N, Rad, &Qd, &Qv);
+	#undef Rad
 	
 	FILE *fs = fopen("result.xls", "w");
 	for (int j = 0; j <= N; j++)
 	{
 		double r = (double)j / N;
-		fprintf(fs, "%.5f\t%E\n", r, q[j]);
+		double relate = Qd[j] / Qv[j];
+		fprintf(fs, "%.5f\t%E\t%E\t%E\n", r, Qd[j], Qv[j], relate);
 	}
 	
 	fclose(fs);
-	//printf("\n=========================\n");
-	//display_a(N + 1, q);
-	free(q);
+	free(Qd);
+	free(Qv);
+}
+
+void
+save_Qrelation(const size_t N)
+{
+	double *Qd = NULL, *Qv = NULL;
+	
+	double T0 = 10000, m = 4.;
+	
+	FILE *fs = fopen("Qd-Qv.xls", "w");
+	for (int j = 1; j <= 16; j++)
+	{
+		double radius = 0.1 * j;
+		get_q(T0, m, N, radius, &Qd, &Qv);
+		
+		double relation = Qd[0] / Qv[0];
+		fprintf(fs, "%.5f\t%E\t\n", radius, relation);
+	}
+	
+	fclose(fs);
+	free(Qd);
+	free(Qv);
 }
