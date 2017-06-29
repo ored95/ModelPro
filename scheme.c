@@ -245,17 +245,33 @@ void
 save_Qrelation(const size_t N)
 {
 	double *Qd = NULL, *Qv = NULL;
-	
-	double T0 = 10000, m = 4.;
+	double T0 = 6000., m = 4.;
 	
 	FILE *fs = fopen("Qd-Qv.xls", "w");
+	
+	for (int i = 0; i <= 8; i++)
+		fprintf(fs, "\t%d", 6000 - i * 500);
+	fprintf(fs, "\n");
+	
 	for (int j = 1; j <= 16; j++)
 	{
 		double radius = 0.1 * j;
-		get_q(T0, m, N, radius, &Qd, &Qv);
+		fprintf(fs, "%.5f", radius);
 		
-		double relation = Qd[0] / Qv[0];
-		fprintf(fs, "%.5f\t%E\t\n", radius, relation);
+		for (int i = 0; i <= 8; i++)
+		{
+			Qd = NULL; Qv = NULL; 
+			double tmp = T0 - i * 500.;
+			
+			get_q(tmp, m, N, radius, &Qd, &Qv);
+			
+			double relation = Qd[0] / Qv[0];
+			fprintf(fs, "\t%E", relation);
+			
+			free(Qd); free(Qv);
+		}
+		
+		fprintf(fs, "\n");
 	}
 	
 	fclose(fs);
