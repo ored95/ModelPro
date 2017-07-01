@@ -123,7 +123,7 @@ solve_tridiagonal(double freq, double dfreq, const double T0, const double m, co
 
 void
 get_q(const double T0, const double m, const size_t N, const double radius,
-	  double **Qd, double **Qv)
+	  double **Qd, double **Qv, double **T)
 {
 	/* ========== READ DATA =========== */
 	double *frequency = malloc_array(194);
@@ -183,9 +183,11 @@ get_q(const double T0, const double m, const size_t N, const double radius,
 	/* ========== CALCULATE Q ========== */
 	*Qd = malloc_array(N + 1);
 	*Qv = malloc_array(N + 1);
+	*T = malloc_array(N + 1);
 	
 	double dx = 1. / N;
-		   
+	
+	#define Ra 0.35 /* cm */
 	for (int i = 0; i <= N; i++)
 	{
 		double xf = i * dx;
@@ -193,6 +195,7 @@ get_q(const double T0, const double m, const size_t N, const double radius,
 		
 		(*Qd)[i] = 0.;
 		(*Qv)[i] = 0.;
+		(*T)[i] = 0.;
 		
 		for (int j = 0; j < 193; j++)
 		{
@@ -210,12 +213,15 @@ get_q(const double T0, const double m, const size_t N, const double radius,
 				//printf("%E\t%E\t%E\t%E\n", xf, ki, upi, y[j][i]);
 			(*Qd)[i] += ki * (upi - y[j][i]);
 			(*Qv)[i] += ki * upi;
+			(*T)[i] += ki;
 		}
-		  
+		
 		(*Qd)[i] *= Ch;
 		(*Qv)[i] *= Ch;
+		(*T)[i] *= Ra;
 	}
-
+	#undef Ra
+	
 	free(k_tab); free_m(193, y);
 	free(temperature); free(frequency); free_m(16, KT);
 }
@@ -223,34 +229,35 @@ get_q(const double T0, const double m, const size_t N, const double radius,
 void 
 save_solution(const double T0, const double m, const size_t N)
 {
-	double *Qd = NULL, *Qv = NULL;
+	double *Qd = NULL, *Qv = NULL, *T = NULL;
 	#define Rad 0.35 /* cm */
-	get_q(T0, m, N, Rad, &Qd, &Qv);
+	get_q(T0, m, N, Rad, &Qd, &Qv, &T);
 	#undef Rad
 	
 	FILE *fs = fopen("result.xls", "w");
 	for (int j = 0; j <= N; j++)
 	{
-		double r = (double)j / N;
+		//double r = (double)j / N;
 		double relate = Qd[j] / Qv[j];
-		fprintf(fs, "%.5f\t%E\t%E\t%E\n", r, Qd[j], Qv[j], relate);
+		fprintf(fs, "%E\t%E\n", T[j], relate);
 	}
 	
 	fclose(fs);
 	free(Qd);
 	free(Qv);
+	free(T);
 }
 
 void
 save_Qrelation(const size_t N)
 {
-	double *Qd = NULL, *Qv = NULL;
-	double T0 = 6000., m = 4.;
+	double *Qd = NULL, *Qv = NULL, *T = NULL;
+	double T0 = 10000., m = 4.;
 	
 	FILE *fs = fopen("Qd-Qv.xls", "w");
 	
 	for (int i = 0; i <= 8; i++)
-		fprintf(fs, "\t%d", 6000 - i * 500);
+		fprintf(fs, "\t%d", (int)T0 - i * 500);
 	fprintf(fs, "\n");
 	
 	for (int j = 1; j <= 16; j++)
@@ -258,13 +265,13 @@ save_Qrelation(const size_t N)
 		double radius = 0.1 * j;
 		fprintf(fs, "%.5f", radius);
 		
-		for (int i = 0; i <= 8; i++)
+		for (int i = 0; i <= 4; i++)
 		{
-			Qd = NULL; Qv = NULL; 
+			Qd = NULL; Qv = NULL; T = NULL; 
 			double tmp = T0 - i * 500.;
 			
-			get_q(tmp, m, N, radius, &Qd, &Qv);
-			
+			get_q(tmp, m, N, radius, &Qd, &Qv, &T);
+				
 			double relation = Qd[0] / Qv[0];
 			fprintf(fs, "\t%E", relation);
 			
@@ -277,4 +284,5 @@ save_Qrelation(const size_t N)
 	fclose(fs);
 	free(Qd);
 	free(Qv);
+	free(T);
 }

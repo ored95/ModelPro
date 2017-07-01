@@ -13,6 +13,7 @@
 #define C2 (Hp * 1.E+15 / Kh)
 #define mN (2. / 0.848 / 3.)	/* Old version */
 //#define mN (2. / 0.86065 / 3.)	/* New version */
+//#define mN 0.75
 
 double temper(double, const double, const double);
 
@@ -29,7 +30,7 @@ void solve_tridiagonal(double, double, const double, const double, const double,
 					   const size_t, double **);
 					   
 void getq(const double, const double, const size_t, const double,
-		  double **, double **);
+		  double **, double **, double **);
 					   
 void save_solution(const double, const double, const size_t);
 
