@@ -36,7 +36,7 @@ get_co(double freq, double dfreq, const double T0, const double m, const double 
 	double 	k00 = interp_log(t00, Ntk, T, k),
 			k01 = interp_log(t01, Ntk, T, k),
 			kN1 = interp_log(tN1, Ntk, T, k),
-			kN0 = interp_log(tN1, Ntk, T, k);
+			kN0 = interp_log(tN0, Ntk, T, k);
 	double 	u00 = Up(t00, freq, dfreq),
 			u01 = Up(t01, freq, dfreq),
 			uN1 = Up(tN1, freq, dfreq),
@@ -130,7 +130,7 @@ get_q(const double T0, const double m, const size_t N, const double radius,
 	double *temperature = malloc_array(16);
 	double **KT = malloc_matrix(16, 193);
 	
-	FILE *fs = fopen("frequency.txt", "r");
+	FILE *fs = fopen("./sources/frequency.txt", "r");
 	rewind(fs);
 	for (int i = 0; i < 194; i++)
 	{
@@ -138,7 +138,7 @@ get_q(const double T0, const double m, const size_t N, const double radius,
 	}
 	fclose(fs);
 	
-	fs = fopen("temperature.txt", "r");
+	fs = fopen("./sources/temperature.txt", "r");
 	rewind(fs);
 	for (int i = 0; i < 16; i++)
 	{
@@ -146,7 +146,7 @@ get_q(const double T0, const double m, const size_t N, const double radius,
 	}
 	fclose(fs);
 	
-	fs = fopen("TK.txt", "r");
+	fs = fopen("./sources/TK.txt", "r");
 	rewind(fs);
 	for (int i = 0; i < 16; i++)
 	{
@@ -208,9 +208,9 @@ get_q(const double T0, const double m, const size_t N, const double radius,
 			double dfreq = frequency[j+1] - frequency[j];
 			
 			double upi = Up(tf, freq, dfreq);
-			//if (j == 22)
+			if (j == 22)
 				//printf("%E\t%E\t%E\t%E\t%.8f\t%.8f\n", xf, ki, upi, y[j][i], freq, dfreq);
-				//printf("%E\t%E\t%E\t%E\n", xf, ki, upi, y[j][i]);
+				printf("%E\t%E\t%E\t%E\n", xf, ki, upi, y[j][i]);
 			(*Qd)[i] += ki * (upi - y[j][i]);
 			(*Qv)[i] += ki * upi;
 			(*T)[i] += ki;
