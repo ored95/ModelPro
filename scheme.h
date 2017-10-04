@@ -2,6 +2,7 @@
 #define __SCHEME_H__
 #include "alloc.h"
 #include "interp.h"
+#include <math.h>
 
 #define Tw 2000		/* temperature (Kelvin) */
 #define PI 3.14159265359		/*	[]		*/
@@ -29,7 +30,7 @@ void solve_tridiagonal(double, double, const double, const double, const double,
 					   const size_t, const double *, const double *,
 					   const size_t, double **);
 					   
-void getq(const double, const double, const size_t, const double,
+void getq(const double, const double, const size_t, const double, const double,
 		  double **, double **, double **);
 					   
 void save_solution(const double, const double, const size_t);

@@ -4,9 +4,9 @@
 int main()
 {	
 	double T0 = 10000, m = 4.;
-	int N;
-	printf("+ Number of intervals: ");
-	scanf("%d", &N);
+	int N = 80;
+	//printf("+ Number of intervals: ");
+	//scanf("%d", &N);
 	
 	save_solution(T0, m, N);
 	//save_Qrelation(N);
