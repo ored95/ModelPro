@@ -7,7 +7,11 @@ double* malloc_array(const size_t);
 
 double** malloc_matrix(const size_t, const size_t);
 
+double *** malloc_matrix_3D(const size_t, const size_t, const size_t);
+
 void free_m(size_t, double **);
+
+void free_matrix_3D(const size_t, const size_t, double ***);
 
 void display(const size_t, const double *, const double *);
 

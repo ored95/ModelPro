@@ -175,7 +175,7 @@ get_q(const double T0, const double m, const size_t N, const double radius, cons
 		solve_tridiagonal(freq, dfreq, T0, m, radius, 16, temperature, k_tab, N, &tmp);
 		
 		/* save to tab */
-		for (int j = 0;  j <= N; j++)
+		for (int j = 0; j <= N; j++)
 			y[i][j] = tmp[j];
 		free(tmp);
 	}

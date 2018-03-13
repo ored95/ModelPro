@@ -5,10 +5,10 @@ CC := gcc
 FLAGS := -std=c99 -Wall -Werror
 
 # Dependency
-DEPS := alloc.h interp.h scheme.h
+DEPS := alloc.h interp.h scheme.h integ.h
 
 # Object files
-OBJS := alloc.o interp.o scheme.o main.o
+OBJS := alloc.o interp.o scheme.o integ.o main.o
 
 %.o: %.c $(DEPS)
 	$(CC) $(FLAGS) -c $<

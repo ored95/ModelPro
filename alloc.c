@@ -25,12 +25,36 @@ malloc_matrix(const size_t m, const size_t n)
 	return temp;
 }
 
+double ***
+malloc_matrix_3D(const size_t m, const size_t n, const size_t k)
+{
+	double ***tmp = (double ***)malloc(m * sizeof(double **));
+	if (!tmp)
+	{
+		printf("Error #1: Not enough memory!\n");
+		return NULL;
+	}
+	for (size_t i = 0; i < m; i++)
+	{
+		tmp[i] = malloc_matrix(n, k);
+	}
+	return tmp;
+}
+
 void 
 free_m(size_t n, double **x)
 {
 	for (size_t i = 0; i < n; i++)
 		free(x[i]);
 	free(x);
+}
+
+void 
+free_matrix_3D(const size_t m, const size_t n, double ***src)
+{
+	for (size_t i = 0; i < m; i++)
+		free_m(n, src[i]);
+	free(src);
 }
 
 void
