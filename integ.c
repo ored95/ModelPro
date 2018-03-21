@@ -114,6 +114,7 @@ save_F(const double T0, const double m)
 						for (int jx = nKj + 1; jx <= __nKj; jx++)
 						{
 							s += kj[jx];
+							
 							if (s * Radius / __nZ > 1.)
 							{
 								s -= kj[jx];
