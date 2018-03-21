@@ -1,18 +1,18 @@
 #include "integ.h"
 
 double 
-__Ip(double tf, double freq)
+__Ip(double tf, double freq, double dfreq)
 {
-	double v0 = __C1 * freq * pow((freq / 3.), 2.);
+	double v0 = __C1 * dfreq * freq * pow((freq / 3.), 2.);
 	double v1 = exp(C2 * freq / tf) - 1.;
 	
 	return v0 / v1;
 }
 
 double
-__Up(double tf, double freq)
+__Up(double tf, double freq, double dfreq)
 {
-	double v0 = __C0 * pow((freq / 3.), 3.);
+	double v0 = __C0 * dfreq * pow((freq / 3.), 3.);
 	double v1 = exp(C2 * freq / tf) - 1.;
 	
 	return v0 / v1;
@@ -53,15 +53,13 @@ save_F(const double T0, const double m)
 	}
 	fclose(fs);
 	
-	/* ===========    Split K(T, F) array    ============ */
-	
 	/* =========== Solution of integral form ============ */
-	size_t __nPhi = 100, __nTheta = 50, __nZ = 80, __nKj = 100;
+	size_t __nPhi = 40, __nTheta = 20, __nZ = 40, __nKj = 100;
 	double **U = malloc_matrix(193, __nZ + 1);
 	
 	double dPhi = PI / __nPhi,
 		   dTheta = PI / 2./ __nTheta;
-	double __sPhi = 0.,
+	double __sPhi = dPhi / 2.,
 		   __sTheta = dTheta / 2.;
 
 	double dz = 1. / __nZ;
@@ -72,17 +70,17 @@ save_F(const double T0, const double m)
 #define Radius 0.35		/* cm */	
 	for (int iz = 0; iz <= __nZ; iz++)
 	{
-		double z = dz * iz;
-		//	   z00 = z * z;				// position
+		double z = dz * iz;				// position (* Radius)
 		//double tf = temper(z, T0, m);	// temperature (changed)
 		
 		for (int k = 0; k < 193; k++)
 		{
 			U[k][iz] = 0.;		// init
 			double freq = (frequency[k+1] + frequency[k]) / 2.;		// frequency (const)
-
+			double dfreq = frequency[k+1] - frequency[k];
+			
 			// k in KT[k]
-			for (int i = 0; i <= __nPhi; i++)
+			for (int i = 0; i < __nPhi; i++)
 			{
 				double phi = __sPhi + dPhi * i;
 				for (int j = 0; j < __nTheta; j++)
@@ -90,24 +88,22 @@ save_F(const double T0, const double m)
 					double theta = __sTheta + dTheta * j;
 				
 					// Now calculate main integral by method average-rectangle
-					double z1 = z * cos(phi),
-						   //z11 = z1 * z1,
-						   z22 = 1. - z * z * sin(phi) * sin(phi),
-						   z2 = sqrt(z22),
-						   d = Radius * (z1 + z2);
-
+					double D = z * cos(phi) + sqrt(1. - z * z * sin(phi) * sin(phi));
+					
 					// Calculate integral of (k * Ip * exp(-|kdy) * d(x)
 					result = 0.;
 					
 					// But first, let prepare all coefficient k
 					int nKj;				// just index
-					double d1, t1;			// relation by segment and temperature
+					double k1, zt, t1;		// relation by segment and temperature
 
 					for (nKj = 0; nKj <= __nKj; nKj++)
 					{
-						d1 = d * nKj / __nKj;
-						t1 = temper(d1 / Radius, T0, m);
-						IP[nKj] = __Ip(t1, freq);
+						k1 = 1. - nKj / __nKj;
+						zt = sqrt(z * z + k1 * k1 * D * D - 2. * k1 * D  * z * cos(phi));
+						//printf("%.2f : %.9f : %.9f : %.9f\n", k1, z, D, zt);
+						t1 = temper(zt, T0, m);
+						IP[nKj] = __Ip(t1, freq, dfreq);
 						kj[nKj] = interp_log(t1, 16, temperature, KT[k]);
 					}
 					
@@ -116,21 +112,29 @@ save_F(const double T0, const double m)
 					{
 						double s = 0.;
 						for (int jx = nKj + 1; jx <= __nKj; jx++)
+						{
 							s += kj[jx];
+							if (s * Radius / __nZ > 1.)
+							{
+								s -= kj[jx];
+								break;
+							}
+						}
 
-						s = s * d / __nKj / sin(theta);
+						s *= (D * Radius / sin(theta)) / __nKj;
 						// Result
 						result += kj[nKj] * IP[nKj] * exp(-s);
 					}
-
-					U[k][iz] += result * d / sin(theta);
+					
+					//U[k][iz] += result * (D * Radius * sin(theta)) / __nKj / sin(theta);
+					U[k][iz] += result * D;
 				}
 			}
 
-			U[k][iz] *= dTheta * dPhi; printf("\rdone: %d : %d", iz, k);
-		}
+			U[k][iz] *= 4. * dTheta * dPhi * (Radius / __nKj); printf("\r%3d : %3d", iz, k);
+		} //if (iz == 2) break;
 	}
-
+	//printf("\n\n");
 	free(kj);
 	free(IP);
 
@@ -144,18 +148,42 @@ save_F(const double T0, const double m)
 		double z = dz * iz;
 		double tf = temper(z, T0, m);	// temperature (changed)
 		
-		for (int k = 0; k < 193; k++)
+		int k = 0;
+		double s = 0.;
+		for (; k < 193; k++)
 		{
 			double ki = interp_log(tf, 16, temperature, KT[k]);
-			double freq = (frequency[k] + frequency[k+1]) / 2.;
-			
-			double UP = __Up(tf, freq);
-			div[iz] += ki * (UP - U[k][iz]);
+			s += ki;
+
+			if (s * Radius / __nZ > 1.)
+				break;
 		}
 
-		printf("%.5f\n", div[iz]);
+		for (int j = 0; j < k; j++)
+		{
+			double ki = interp_log(tf, 16, temperature, KT[j]);
+			double freq = (frequency[j] + frequency[j+1]) / 2.;
+			double dfreq = frequency[j+1] - frequency[j];
+			
+			double UP = __Up(tf, freq, dfreq);
+			div[iz] += ki * (UP - U[j][iz]);
+
+			//printf("%3d:\t%.5f\t%E\t%E\t%E\n", k, ki, UP, U[k][iz], div[iz]);
+		}
+		
+		printf("%E\n", div[iz]);
 	}
+
+	// fs = fopen("res03.xls", "w");
+	// for (int iz = 0; iz <= __nZ; iz++)
+	// {
+	// 	double z = dz * iz;
+	// 	fprintf(fs, "%.5f\t%E\n", z, div[iz]);
+	// }
+	// fclose(fs);
+
 	free(div);
 	free_m(193, U);
 	free(temperature); free(frequency); free_m(16, KT);
+#undef Radius
 }
