@@ -128,7 +128,7 @@ get_q(const double T0, const double m, const size_t N, const double radius, cons
 	/* ========== READ DATA =========== */
 	double *frequency = malloc_array(194);
 	double *temperature = malloc_array(16);
-	double **KT = malloc_matrix(16, 193);
+	double **KT = malloc_matrix(193, 16);
 	
 	FILE *fs = fopen("./sources/frequency.txt", "r");
 	rewind(fs);
@@ -152,27 +152,27 @@ get_q(const double T0, const double m, const size_t N, const double radius, cons
 	{
 		for (int j = 0; j < 193; j++)
 		{
-			fscanf(fs, "%lf", &KT[i][j]);
+			fscanf(fs, "%lf", &KT[j][i]);
 		}
 	}
 	fclose(fs);
 	
 	/* ========== SOLVE SYSTEM U-F ========== */
 	double **y = malloc_matrix(193, N+1);	// save Ui
-	double *k_tab = malloc_array(16);		// copies from given data
+	//double *k_tab = malloc_array(16);		// copies from given data
 	double *tmp = NULL;
 	for (int i = 0; i < 193; i++)
 	{
-		/* get copy of value (k) from tab */
-		for (int j = 0; j < 16; j++)
-			k_tab[j] = KT[j][i];
+		// /* get copy of value (k) from tab */
+		// for (int j = 0; j < 16; j++)
+		// 	k_tab[j] = KT[j][i];
 		
 		/* solve tridiagonal system */	
 		double freq = (frequency[i+1] + frequency[i]) / 2.;
 		double dfreq = frequency[i+1] - frequency[i];
 		
 		tmp = NULL;
-		solve_tridiagonal(freq, dfreq, T0, m, radius, 16, temperature, k_tab, N, &tmp);
+		solve_tridiagonal(freq, dfreq, T0, m, radius, 16, temperature, KT[i], N, &tmp);
 		
 		/* save to tab */
 		for (int j = 0; j <= N; j++)
@@ -198,11 +198,11 @@ get_q(const double T0, const double m, const size_t N, const double radius, cons
 		for (; j < 193; j++)
 		{
 			/* get copy of value (k) from tab */
-			for (int jp = 0; jp < 16; jp++)
-				k_tab[jp] = KT[jp][j];
+			// for (int jp = 0; jp < 16; jp++)
+			// 	k_tab[jp] = KT[jp][j];
 			
 			
-			double ki = interp_log(tf, 16, temperature, k_tab);
+			double ki = interp_log(tf, 16, temperature, KT[j]);
 			(*T)[i] += ki;
 			
 			if ((*T)[i] * Ra / N > Tkey)
@@ -219,10 +219,10 @@ get_q(const double T0, const double m, const size_t N, const double radius, cons
 		for (int k = 0; k < j; k++)
 		{
 			/* get copy of value (k) from tab */
-			for (int jp = 0; jp < 16; jp++)
-				k_tab[jp] = KT[jp][k];
+			// for (int jp = 0; jp < 16; jp++)
+			// 	k_tab[jp] = KT[jp][k];
 			
-			double ki = interp_log(tf, 16, temperature, k_tab);
+			double ki = interp_log(tf, 16, temperature, KT[k]);
 			double freq = (frequency[k] + frequency[k+1]) / 2.;
 			double dfreq = frequency[k+1] - frequency[k];
 			
@@ -237,7 +237,8 @@ get_q(const double T0, const double m, const size_t N, const double radius, cons
 	
 #undef Ra
 	
-	free(k_tab); free_m(193, y);
+	//free(k_tab); 
+	free_m(193, y);
 	free(temperature); free(frequency); free_m(16, KT);
 }
 
@@ -250,12 +251,13 @@ save_solution(const double T0, const double m, const size_t N)
 	
 	
 	FILE *fs = fopen("result.xls", "w");
-	fprintf(fs, "x\tQv\tQd\th\tTau\n");
+	//fprintf(fs, "x\tQv\tQd\th\tTau\n");
 	for (int j = 0; j <= N; j++)
 	{
 		double x = (double)j / N;
-		double relate = Qv[j] / Qd[j];
-		fprintf(fs, "%.5f\t%E\t%E\t%E\t%E\n", x, Qv[j], Qd[j], relate, T[j]);
+		//double relate = Qv[j] / Qd[j];
+		//fprintf(fs, "%.5f\t%E\t%E\t%E\t%E\n", x, Qv[j], Qd[j], relate, T[j]);
+		fprintf(fs, "%.5f\t%E\n", x, Qd[j]);
 	}
 	#undef Rad
 	
