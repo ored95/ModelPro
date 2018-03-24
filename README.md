@@ -1,6 +1,6 @@
 # ModelPro
 
-Current version 2.0
+Current version 2.1
 
 Modeling description:
 ```
@@ -13,5 +13,8 @@ Methods:
 ```
 Calculation time:
 ```
-1. Diffusion method: <= 1 min.
+1. Diffusion method: <= 5 sec.
+2. Integral method: ~ 10-30 mins.
+
+Latest stream: 2.200968E+002.
 ```

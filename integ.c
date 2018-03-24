@@ -54,7 +54,7 @@ save_F(const double T0, const double m)
 	fclose(fs);
 	
 	/* =========== Solution of integral form ============ */
-	size_t __nPhi = 40, __nTheta = 20, __nZ = 40, __nKj = 100;
+	size_t __nPhi = 40, __nTheta = 20, __nZ = 50, __nKj = 80;
 	double **U = malloc_matrix(193, __nZ + 1);
 	
 	double dPhi = PI / __nPhi,
@@ -115,7 +115,7 @@ save_F(const double T0, const double m)
 						{
 							s += kj[jx];
 							
-							if (s * Radius / __nZ > 1.)
+							if (s * Radius / __nKj > 1.)
 							{
 								s -= kj[jx];
 								break;

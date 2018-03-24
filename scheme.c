@@ -163,10 +163,6 @@ get_q(const double T0, const double m, const size_t N, const double radius, cons
 	double *tmp = NULL;
 	for (int i = 0; i < 193; i++)
 	{
-		// /* get copy of value (k) from tab */
-		// for (int j = 0; j < 16; j++)
-		// 	k_tab[j] = KT[j][i];
-		
 		/* solve tridiagonal system */	
 		double freq = (frequency[i+1] + frequency[i]) / 2.;
 		double dfreq = frequency[i+1] - frequency[i];
@@ -197,11 +193,6 @@ get_q(const double T0, const double m, const size_t N, const double radius, cons
 		
 		for (; j < 193; j++)
 		{
-			/* get copy of value (k) from tab */
-			// for (int jp = 0; jp < 16; jp++)
-			// 	k_tab[jp] = KT[jp][j];
-			
-			
 			double ki = interp_log(tf, 16, temperature, KT[j]);
 			(*T)[i] += ki;
 			
@@ -218,16 +209,12 @@ get_q(const double T0, const double m, const size_t N, const double radius, cons
 		
 		for (int k = 0; k < j; k++)
 		{
-			/* get copy of value (k) from tab */
-			// for (int jp = 0; jp < 16; jp++)
-			// 	k_tab[jp] = KT[jp][k];
-			
 			double ki = interp_log(tf, 16, temperature, KT[k]);
 			double freq = (frequency[k] + frequency[k+1]) / 2.;
 			double dfreq = frequency[k+1] - frequency[k];
 			
 			double upi = Up(tf, freq, dfreq);
-			(*Qd)[i] += ki * (upi - y[k][i]);//y[j][i];//
+			(*Qd)[i] += ki * (upi - y[k][i]);
 			(*Qv)[i] += ki * upi;
 		}
 		
@@ -237,7 +224,6 @@ get_q(const double T0, const double m, const size_t N, const double radius, cons
 	
 #undef Ra
 	
-	//free(k_tab); 
 	free_m(193, y);
 	free(temperature); free(frequency); free_m(16, KT);
 }
@@ -250,18 +236,19 @@ save_solution(const double T0, const double m, const size_t N)
 	get_q(T0, m, N, Rad, 1., &Qd, &Qv, &T);
 	
 	
-	FILE *fs = fopen("result.xls", "w");
+	//FILE *fs = fopen("result.xls", "w");
 	//fprintf(fs, "x\tQv\tQd\th\tTau\n");
 	for (int j = 0; j <= N; j++)
 	{
-		double x = (double)j / N;
+		//double x = (double)j / N;
 		//double relate = Qv[j] / Qd[j];
 		//fprintf(fs, "%.5f\t%E\t%E\t%E\t%E\n", x, Qv[j], Qd[j], relate, T[j]);
-		fprintf(fs, "%.5f\t%E\n", x, Qd[j]);
+		//fprintf(fs, "%.5f\t%E\n", x, Qd[j]);
+		printf("%E\n", Qd[j]);
 	}
 	#undef Rad
 	
-	fclose(fs);
+	//fclose(fs);
 	
 	free(Qd);
 	free(Qv);

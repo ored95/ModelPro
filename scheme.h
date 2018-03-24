@@ -12,7 +12,7 @@
 //#define Ra 0.35					/*	[cm]	*/
 #define C1 (8. * PI * Hp * 1.E+30)
 #define C2 (Hp * 1.E+15 / Kh)
-#define mN (2. / 0.148 / 3.)	/* Old version */
+#define mN 1.//(2. / 0.867 / 3.)	/* Old version */
 //#define mN (2. / 0.86065 / 3.)	/* New version */
 //#define mN 0.75
 
